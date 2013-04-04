@@ -72,5 +72,3 @@ module NEMA_screws(motor, n = 4, screw_length = 8, screw_type = M3_pan_screw) {
 }
 
 
-
-NEMA(NEMA17);

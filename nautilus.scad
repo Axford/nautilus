@@ -1,3 +1,6 @@
+include <stepper-motors.scad>
+use <parametric_involute_gear_v5.0.scad>
+
 
 plastic = "yellow";
 
@@ -85,6 +88,70 @@ module axleBushing() {
 	}
 }
 
-//axle();
-//b608();
-//axleBushing();
+module frameTube(l=100) {
+	// dummy this for now, replace with alu box section or 20x20 alu extrusion
+	w = 20;
+	wall = 1;
+	translate([-w/2,-w/2,0]) difference() {
+		cube([w,w,l]);
+		translate([wall,wall,-1]) cube([w-2*wall,w-2*wall,l+2]);
+	}
+}
+
+module smallGear(n=11,cp=500) {
+	gear (number_of_teeth=n,
+    circular_pitch=cp,
+	gear_thickness = 12,
+	rim_thickness = 15,
+	hub_thickness = 15,
+	bore_diameter = 8,
+	circles=8);
+}
+
+module bigGear(n=39,cp=500) {
+	gear (number_of_teeth=n,
+    circular_pitch=cp,
+	gear_thickness = 12,
+	rim_thickness = 15,
+	hub_thickness = 15,
+	bore_diameter = 8,
+	circles=8);
+}
+
+module pumpFrame() {
+	w = 100;
+	frameTubeOffset = 50;  // dist from axle centre to frameTube centre
+	motorOffset = 35; // dist from frameTube centre to motor centre
+	pitchR = 2*(frameTubeOffset + motorOffset);
+	cp = 180 * pitchR / (11 + 39);
+
+	translate([0,0,-20]) axle(l=w+40);
+	translate([0,0,0]) {
+		translate([0,0,-1]) axleBushing();
+		b608();
+	}
+	translate([0,0,w]) rotate([180,0,0]) {
+		translate([0,0,-1]) axleBushing();
+		b608();
+	}
+	
+	translate([0,0,-3]) rotate([180,0,0]) bigGear(n=39, cp=cp);
+
+	for (i=[0:1]) {
+		rotate([0,0,i*180]) translate([0,frameTubeOffset,0]) frameTube(w);
+	}
+
+	translate([0,frameTubeOffset + motorOffset,0]) {
+		rotate([180,0,0]) NEMA(NEMA17);
+		translate([0,0,-3]) rotate([180,0,0]) rotate([0,0,360/11/2]) smallGear(n=11, cp=cp);
+	}
+}
+
+
+pumpFrame();
+
+
+
+//print bed = cube([200,200,1],center=true);
+
+
