@@ -29,7 +29,7 @@ P5_20x80 = [20, 80, 4.3/2, 1.8, 6.35, 5, 11.5, 1, 1, 0, 20];
 
 
 // example
-//valueFrameBoxSection(P5_20x20, 100);
+//valueFrameProfile(P5_20x20, 100);
 
 
 
@@ -57,7 +57,7 @@ module valueFrameHollow(d,slot,t,wall,centres) {
 			paths=[[0,1,2,3,4,5]]);
 }
 
-module valueFrameBoxSection(profile, l) {
+module valueFrameProfile(profile, l) {
 	$fn=8;
 
 	x=profile[0];
@@ -80,7 +80,7 @@ module valueFrameBoxSection(profile, l) {
 	xHollows = xSlots>1?xSlots-1:0;
 	yHollows = ySlots>1?ySlots-1:0;
 
-	linear_extrude(height=l) {
+	color("silver") linear_extrude(height=l) {
 		
 		difference() {		
 
