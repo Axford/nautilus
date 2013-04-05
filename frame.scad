@@ -532,3 +532,12 @@ module machine(pumpRot=0) {
 machine(pumpRot=0);
 
 //pumpTube();
+
+
+// calculate total extrusion requirements
+echo(frameH - frameProfileW, " x 4");
+echo(frameW - 2*frameProfileW, " x 2");
+echo(frameSideCentres - frameProfileW, " x 2");
+
+
+
