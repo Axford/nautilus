@@ -1,9 +1,7 @@
 
 
-include <frame.scad>
+use <frame.scad>
 
 
 
-//machine($t*360);
-
-machine(pumpRot=10);
+machine(pumpRot=-$t*360);

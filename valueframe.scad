@@ -92,45 +92,49 @@ module valueFrameProfile(profile, l) {
 				translate([x/2-corner,-y/2+corner,0]) circle(r=corner);
 			}
 
-			// slots
-			// y
-			for (i=[0:ySlots-1]) {
-				translate([0,ySlotStart+i*centres,0]) {
-					translate([x/2,0,0]) valueFrameSlot(d,slot,t,wall,sides>0?true:false,skin);
-					rotate([0,0,180]) translate([x/2,0,0]) valueFrameSlot(d,slot,t,wall,sides==3?true:false,skin);
-				}
-			}
+			if (!simplify) {
 
-			// x
-			for (i=[0:xSlots-1]) {	
-				translate([xSlotStart+i*centres,0,0]) {
-					rotate([0,0,90]) translate([y/2,0,0]) valueFrameSlot(d,slot,t,wall,sides==2?true:false,skin);
-					rotate([0,0,270]) translate([y/2,0,0]) valueFrameSlot(d,slot,t,wall,false,skin);
-				}
-			}
-
-			// bores
-			for (i=[0:xSlots-1]) {
-				for (j=[0:ySlots-1]) {
-					translate([xSlotStart+i*centres,ySlotStart+j*centres,0]) circle(r=bore);
-				}
-			}
-
-			// hollows
-			for (i=[0:xHollows]) 
-				for (j=[0:yHollows]) {
-			
-				
-				translate([xSlotStart+centres/2+i*centres,ySlotStart+centres/2 +j*centres,0]) {
-					if (j < yHollows) {
-						valueFrameHollow(d,slot,t,wall,centres);
-						translate([-centres,0,0]) rotate([0,0,180]) valueFrameHollow(d,slot,t,wall,centres);
+				// slots
+				// y
+				for (i=[0:ySlots-1]) {
+					translate([0,ySlotStart+i*centres,0]) {
+						translate([x/2,0,0]) valueFrameSlot(d,slot,t,wall,sides>0?true:false,skin);
+						rotate([0,0,180]) translate([x/2,0,0]) valueFrameSlot(d,slot,t,wall,sides==3?true:false,skin);
 					}
-				
-					if (i < xHollows) {
-						rotate([0,0,90]) valueFrameHollow(d,slot,t,wall,centres);
-						translate([0,-centres,0]) rotate([0,0,270]) valueFrameHollow(d,slot,t,wall,centres);
+				}
+	
+				// x
+				for (i=[0:xSlots-1]) {	
+					translate([xSlotStart+i*centres,0,0]) {
+						rotate([0,0,90]) translate([y/2,0,0]) valueFrameSlot(d,slot,t,wall,sides==2?true:false,skin);
+						rotate([0,0,270]) translate([y/2,0,0]) valueFrameSlot(d,slot,t,wall,false,skin);
 					}
+				}
+	
+				// bores
+				for (i=[0:xSlots-1]) {
+					for (j=[0:ySlots-1]) {
+						translate([xSlotStart+i*centres,ySlotStart+j*centres,0]) circle(r=bore);
+					}
+				}
+	
+				// hollows
+				for (i=[0:xHollows]) 
+					for (j=[0:yHollows]) {
+				
+					
+					translate([xSlotStart+centres/2+i*centres,ySlotStart+centres/2 +j*centres,0]) {
+						if (j < yHollows) {
+							valueFrameHollow(d,slot,t,wall,centres);
+							translate([-centres,0,0]) rotate([0,0,180]) valueFrameHollow(d,slot,t,wall,centres);
+						}
+					
+						if (i < xHollows) {
+							rotate([0,0,90]) valueFrameHollow(d,slot,t,wall,centres);
+							translate([0,-centres,0]) rotate([0,0,270]) valueFrameHollow(d,slot,t,wall,centres);
+						}
+					}
+	
 				}
 
 			}

@@ -1,4 +1,5 @@
 use_realistic_colors = true;
+simplify = false;    // reduces complexity of some parts, e.g. alu extrusions
 
 include <config.scad>
 include <colors.scad>
@@ -115,7 +116,7 @@ module aluExtL(w=10,h=10,l=100,thickness=1.5) {
 
 
 
-module frame(pumpRot=0) {
+module frame(pumpRot=0, showPump=true) {
 
 	for (i=[0:1]) {
 		// side frames
@@ -142,7 +143,12 @@ module frame(pumpRot=0) {
 		}
 	}
 
-	translate([0,(frameSideCentres)/2,pumpZ]) pumpAssembly(pumpRot);
+	translate([0,(frameSideCentres)/2,pumpZ]) {
+		translate([-frameW/2+frameProfileW,0,0]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
+		translate([-frameW/2+frameProfileW,0,pumpRailCentres]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
+	}
+
+	if (showPump) translate([0,(frameSideCentres)/2,pumpZ]) pumpAssembly(pumpRot);
 
 }
 
@@ -514,27 +520,24 @@ module pumpAssembly(pumpRot=0) {
 		}
 
 	}
-
-	translate([-frameW/2+frameProfileW,0,0]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
-	translate([-frameW/2+frameProfileW,0,pumpRailCentres]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
 }
 
 
-module machine(pumpRot=0) {
-	frame(pumpRot);
+module machine(pumpRot=0, showCrate=true, showSump=true, showPump=true) {
+	frame(pumpRot, showPump);
 	
-	translate([0,0,frameProfileW+1.5]) sump();
+	if (showSump) translate([0,0,frameProfileW+1.5]) sump();
 	
-	translate([0,0,frameShelfH1+1.5]) crateOfBottles();
+	if (showCrate) translate([0,0,frameShelfH1+1.5]) crateOfBottles();
 }
 
 
-machine(pumpRot=0);
+machine(pumpRot=0, showCrate=false, showSump=false, showPump=true);
 
-//pumpTube();
 
 
 // calculate total extrusion requirements
+echo("Frame extrusions: ");
 echo(frameH - frameProfileW, " x 4");
 echo(frameW - 2*frameProfileW, " x 2");
 echo(frameSideCentres - frameProfileW, " x 2");
