@@ -59,7 +59,11 @@ pumpTubeWall = 2;
 pumpTubeCompW = 2*PI*pumpTubeOR/2 - pumpTubeWall*2;  //width when fully compressed
 
 pumpTubes = 4;
-pumpTubeOffset = 25;
+pumpTubeCasingW = pumpTubeCompW + 2*4perim;
+pumpTubeOffset = pumpTubeCasingW + 1;
+
+pumpTubeRollerW = pumpTubes * (pumpTubeOffset) + 5; 
+
 
 
 frameH = pumpZ + pumpRailCentres + frameProfileW/2; 
@@ -362,7 +366,7 @@ module pumpRoller(l=100) {
 }
 
 module pumpRotorAssembly() {
-	rollerW = 100;
+	rollerW = pumpTubeRollerW;
 
 	rotate([0,-90,0]) pumpRotor();
 
@@ -373,33 +377,98 @@ module pumpRotorAssembly() {
 		pumpRoller(rollerW);
 }
 
-module pumpTube() {
+module pumpTube(l=50) {
 	// centred, aligned on z axis
-	rotate_extrude(convexity = 10)
-	translate([pumpRotorOffset + pumpRollerD/2 - (pumpTubeOR - 2*pumpTubeWall), 0, 0])
-	circle(r = pumpTubeOR);
+	// l indicates straight length
+	r = pumpRotorOffset + pumpRollerD/2 - (pumpTubeOR - 2*pumpTubeWall);
+	or = r + 2*pumpTubeOR;
+	color([1,0.2,0.2,0.6]) union() {
+		difference() {
+			rotate_extrude(convexity = 10)
+				translate([r, 0, 0])
+				circle(r = pumpTubeOR);
+	
+			// cut in half
+			translate([-or-1,-or-1,-pumpTubeOR-1]) cube([or*2+2,or+1,2*pumpTubeOR+2]);
+		}
+
+		// straight extensions
+		for (i=[0:1]) rotate([0,i*180,0]) {
+			translate([r,0.1,0]) rotate([90,0,0]) cylinder(h=l, r=pumpTubeOR);
+		}
+	}
 }
 
-module pumpTubeCasing() {
-	w = pumpTubeCompW + 2*4perim;
+module pumpTubeCasingBack() {
+	w = pumpTubeCasingW;
 	or = (pumpRailCentres - frameProfileW)/2;
 	ir = pumpRotorOffset + pumpRollerD/2 + 2*pumpTubeWall;
 	ir2 = pumpRotorOffset + pumpRollerD/2 + 1;
 	difference() {
-		translate([0,0,-w/2]) linear_extrude(height=w) pieSlice(or,0,180);
+		union() {
+			// curved casing
+			translate([0,0,-w/2]) linear_extrude(height=w) pieSlice(or,0,180);
+
+			// mounting feet
+			for(	i=[0,1]) rotate([0,i*180,0]) {
+				difference() {
+					translate([or - 5, + frameProfileW/2,-w/2]) cube([frameProfileW+2,5,w]);
+					translate([or + frameProfileW/2, + frameProfileW/2-1,0]) rotate([-90,0,0]) cylinder(h=7,r=5/2);
+				}
+			}
+		}
 	
 		// remove tubeway
 		translate([0,0,-pumpTubeCompW/2]) cylinder(h=pumpTubeCompW, r=ir);
 
 		// remove bore
-		translate([0,0,-w/2-1]) cylinder(h=w+2, r=ir2);
+		translate([0,0,pumpTubeCompW/2 - 0.5]) cylinder(h=4perim + 1, r1=ir, r2=ir2);
+		mirror([0,0,1]) translate([0,0,pumpTubeCompW/2 - 0.5]) cylinder(h=4perim + 1, r1=ir, r2=ir2);
 	}
+
+	// screws
+	for(	i=[0,1]) rotate([0,i*180,0]) translate([or + frameProfileW/2, frameProfileW/2+5,0]) rotate([-90,0,0]) screw(M5_cap_screw,8);
 }
+
+module pumpTubeCasingFront() {
+	w = pumpTubeCasingW;
+	or = (pumpRailCentres - frameProfileW)/2;
+	ir = pumpRotorOffset + pumpRollerD/2 + 2*pumpTubeWall;
+	ir2 = pumpRotorOffset + pumpRollerD/2 + 1;
+	d = ir + frameProfileW/2;
+	difference() {
+		union() {
+			for(	i=[0,1]) rotate([0,i*180,0]) {
+				// casing
+				translate([ir,-d + frameProfileW/2,-w/2]) cube([or-ir,d,w]);
+
+				// mounting feet
+				difference() {
+					translate([or - 5, - frameProfileW/2-5,-w/2]) cube([frameProfileW+2,5,w]);
+					translate([or + frameProfileW/2, - frameProfileW/2-6,0]) rotate([-90,0,0]) cylinder(h=7,r=5/2);
+				}
+			
+				// hose clips
+				difference() {
+					translate([or - pumpTubeOR/2 - 4 - (or-ir), -ir,-w/2]) cube([pumpTubeOR + 2 + 2,5,w]);
+					translate([or - pumpTubeOR/2 - 2 - (or-ir), -ir-1,0]) rotate([-90,0,0]) cylinder(h=7,r=pumpTubeOR);
+				}
+			}
+		}
+	
+		
+	}
+
+	// screws
+	for(	i=[0,1]) rotate([0,i*180,0]) translate([or + frameProfileW/2, -frameProfileW/2-5,0]) rotate([90,0,0]) screw(M5_cap_screw,8);
+}
+
+//translate([0,0,frameH]) pumpTubeCasingFront();
 
 
 module pumpAssembly(pumpRot=0) {
 
-	translate([50,0,pumpRailCentres/2]) {
+	translate([pumpTubeRollerW/2 + 21,0,pumpRailCentres/2]) {
 	
 		rotate([mRot,0,0]) translate([19,0,-gearOffset]) rotate([0,-90,0]) {
 			translate([0,0,19]) rotate([180,0,0]) rotate([0,0,pumpRot *39/11]) smallGear(cp);
@@ -417,8 +486,8 @@ module pumpAssembly(pumpRot=0) {
 			translate([BB608[2]/2,0,0]) rotate([0,90,0]) ball_bearing(BB608);
 			translate([-1,0,0]) rotate([0,90,0]) axleBushing();
 		}
-		translate([-150,0,0]) {
-			bearingPlate();
+		translate([-pumpTubeRollerW-50,0,0]) {
+			translate([7,0,0]) mirror([1,0,0]) bearingPlate();
 			translate([BB608[2]/2,0,0]) rotate([0,90,0]) ball_bearing(BB608);
 			translate([0,0,0]) rotate([0,90,0]) axleBushing();
 		}
@@ -427,7 +496,7 @@ module pumpAssembly(pumpRot=0) {
 
 			translate([8,0,0]) rotate([0,-90,0]) bigGear(cp);
 	
-			translate([24,0,0]) rotate([0,-90,0]) axle(l=200);
+			translate([24,0,0]) rotate([0,-90,0]) axle(l=pumpTubeRollerW + 75);
 	
 			translate([-13,0,0]) pumpRotorAssembly();
 
@@ -436,9 +505,10 @@ module pumpAssembly(pumpRot=0) {
 		// pump tubes
 		for (i=[0:pumpTubes-1]) {
 		
-			translate([-32 - i*pumpTubeOffset,0,0]) rotate([0,90,0]) {
+			translate([-31 - i*pumpTubeOffset,0,0]) rotate([0,90,0]) {
 				pumpTube();
-				pumpTubeCasing();
+				pumpTubeCasingBack();
+				pumpTubeCasingFront();
 			}
 
 		}
