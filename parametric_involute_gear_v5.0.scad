@@ -4,12 +4,11 @@
 // http://www.thingiverse.com/thing:3575
 
 // Simple Test:
-gear (number_of_teeth=30,
-    circular_pitch=700,
-	gear_thickness = 12,
-	rim_thickness = 15,
-	hub_thickness = 15,
-	circles=8);
+//gear (circular_pitch=700,
+//	gear_thickness = 12,
+//	rim_thickness = 15,
+//	hub_thickness = 17,
+//	circles=8);
 
 //Complex Spur Gear Test:
 //test_gears ();
