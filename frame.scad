@@ -57,6 +57,7 @@ pumpRollerWall = 1;
 
 pumpTubeOR = 8/2;
 pumpTubeWall = 2;
+pumpTubeIR = pumpTubeOR - pumpTubeWall;
 pumpTubeCompW = 2*PI*pumpTubeOR/2 - pumpTubeWall*2;  //width when fully compressed
 
 pumpTubes = 4;
@@ -64,6 +65,17 @@ pumpTubeCasingW = pumpTubeCompW + 2*4perim;
 pumpTubeOffset = pumpTubeCasingW + 1;
 
 pumpTubeRollerW = pumpTubes * (pumpTubeOffset) + 5; 
+
+
+// silicone inlet tube, sized to have same cross-section area as the four pump tubes
+inletTubeOD = 12;
+inletTubeID = 8;
+inletTubeWall = 2;
+
+// inlet manifold
+inletCentres = 32;   // spacing between inlet nozzles
+
+microbore_color = [0.8,0.65,0.4,1];
 
 
 
@@ -116,7 +128,7 @@ module aluExtL(w=10,h=10,l=100,thickness=1.5) {
 
 
 
-module frame(pumpRot=0, showPump=true) {
+module frame() {
 
 	for (i=[0:1]) {
 		// side frames
@@ -147,9 +159,6 @@ module frame(pumpRot=0, showPump=true) {
 		translate([-frameW/2+frameProfileW,0,0]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
 		translate([-frameW/2+frameProfileW,0,pumpRailCentres]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
 	}
-
-	if (showPump) translate([0,(frameSideCentres)/2,pumpZ]) pumpAssembly(pumpRot);
-
 }
 
 module smallGear(cp=270) {
@@ -522,9 +531,71 @@ module pumpAssembly(pumpRot=0) {
 	}
 }
 
+module microborePipe(l=100, od=10) {
+	color(microbore_color) difference() {
+		cylinder(h=l, r=od/2);
+		translate([0,0,-1]) cylinder(h=l+2, r=od/2-1);
+	}
+}
 
-module machine(pumpRot=0, showCrate=true, showSump=true, showPump=true) {
+module microboreCap(od=10) {
+	color(microbore_color) difference() {
+		cylinder(h=od, r=od/2+1);
+		translate([0,0,-1]) cylinder(h=od, r=od/2);
+	}
+}
+
+module microboreT(od=10) {
+	// T points up z axis
+	color(microbore_color) union() {
+		microborePipe(l=20, od=od+2);
+		translate([-15,0,0]) rotate([0,90,0]) microborePipe(l=30, od=od+2);
+	}
+}
+
+module microboreNozzle(l=25, od=10, nod=4) {
+	// nod = nozzle outer diameter
+	color(microbore_color) difference() {
+		union() {
+			cylinder(h=od, r=od/2+1);
+			translate([0,0,od]) cylinder(h=(l-od)/2, r1=od/2+1, r2=nod/2);
+			cylinder(h=l, r=nod/2);
+		}
+		translate([0,0,-1]) cylinder(h=l+2, r=nod/2-0.2);
+	}
+}
+
+
+
+//translate([0,0,frameH]) microboreT();
+
+module inletManifold() {
+	l = frameW;
+	inletOffset = pumpTubes * inletCentres / 2;
+
+	translate([-l/2,0,0]) rotate([0,90,0]) {
+		microborePipe(l=l);
+		translate([0,0,l-9]) microboreCap();
+	}
+	
+
+	// pump inlets
+	for (i=[0:pumpTubes-1]) {
+		translate([-inletOffset +15 + i*inletCentres,0,0]) rotate([-45,0,0]) {
+			microboreT();
+			translate([0,0,10]) microborePipe(l=20);
+			translate([0,0,22]) microboreNozzle();
+		}
+	}
+}
+
+
+module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false) {
 	frame(pumpRot, showPump);
+
+	translate([0,-40,pumpZ + pumpRailCentres - frameProfileW-40]) inletManifold();
+
+	if (showPump) translate([0,(frameSideCentres)/2,pumpZ]) pumpAssembly(pumpRot);
 	
 	if (showSump) translate([0,0,frameProfileW+1.5]) sump();
 	
