@@ -1,40 +1,13 @@
 
 use <vector.scad>
 use <maths.scad>
+use <moreShapes.scad>
 
 fudge = 0.01;
 
 // result is u-v
 function subv(u,v) = [u[0]-v[0], u[1]-v[1], u[2]-v[2]];
 
-
-module torusSlice(r1, r2, start_angle, end_angle, convexity=10) {
-	rx = r1 + r2;
-    ry = rx;
-    trx = rx* sqrt(2) + 1;
-    try = ry* sqrt(2) + 1;
-    a0 = (4 * start_angle + 0 * end_angle) / 4;
-    a1 = (3 * start_angle + 1 * end_angle) / 4;
-    a2 = (2 * start_angle + 2 * end_angle) / 4;
-    a3 = (1 * start_angle + 3 * end_angle) / 4;
-    a4 = (0 * start_angle + 4 * end_angle) / 4;
-    if(end_angle > start_angle)
-        intersection() {
-			rotate_extrude(convexity=convexity) translate([r1,0,0]) circle(r2);
-
-			translate([0,0,-r2-1])
-			linear_extrude(height=2*r2+2)
-        		polygon([
-		            [0,0],
-		            [trx * cos(a0), try * sin(a0)],
-		            [trx * cos(a1), try * sin(a1)],
-		            [trx * cos(a2), try * sin(a2)],
-		            [trx * cos(a3), try * sin(a3)],
-		            [trx * cos(a4), try * sin(a4)],
-		            [0,0]
-		       ]);
-    }
-}
 
 
 module pipeSegment(start,end,od,id,beginning=true) {
@@ -140,7 +113,7 @@ module curvedPipe(points, segments, radii, od, id) {
 
 
 //test piece
-*curvedPipe([ [50,0,0],
+curvedPipe([ [50,0,0],
 			[100,0,0],
 			[100,100,0],
 			[50,100,100],

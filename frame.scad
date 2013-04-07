@@ -1,6 +1,9 @@
 use_realistic_colors = true;
 simplify = false;    // reduces complexity of some parts, e.g. alu extrusions
 
+silicone_color = [1,0.2,0.2,1];
+microbore_color = [0.8,0.65,0.4,1];
+
 include <bom.scad>
 include <config.scad>
 include <colors.scad>
@@ -15,7 +18,8 @@ use <gear_calculator.scad>
 use <roundedRect.scad>
 use <2DShapes.scad>
 use <curvedPipe.scad>
-
+use <microbore.scad>
+use <moreShapes.scad>
 
 perim = 0.7;
 layers = 0.3;
@@ -88,8 +92,11 @@ inletTubeWall = 2;
 // inlet manifold
 inletCentres = 32;   // spacing between inlet nozzles
 
-silicone_color = [1,0.2,0.2,1];
-microbore_color = [0.8,0.65,0.4,1];
+washManifoldZOffset = -44;
+
+function washManifoldAng(washManifoldHandlePos) = washManifoldHandlePos * (16 + 12) - 12; 
+function washManifoldZOffset2(washManifoldAng) = washManifoldZOffset +  frameSideCentres/2 * sin(washManifoldAng)   +  16 * cos(washManifoldAng);
+
 
 
 
@@ -149,7 +156,7 @@ module frame() {
 		rotate([0,0,i*180]) translate([(frameW - 2*frameProfileW)/2+frameProfileW/2,0,0]) {
 			// vertical struts
 			for (j=[0:1]) rotate([0,0,j*180]) translate([0,frameSideCentres/2,frameProfileW]) {
-				rotate([0,0,j*180]) valueFrameProfile(P5_20x201N,l=frameH-frameProfileW);
+				rotate([0,0,j*180]) valueFrameProfile(P5_20x20,l=frameH-frameProfileW);
 			}
 
 			// feet
@@ -548,52 +555,22 @@ module pumpAssembly(pumpRot=0) {
 	}
 }
 
-module microborePipe(l=100, od=10) {
-	color(microbore_color) difference() {
-		cylinder(h=l, r=od/2);
-		translate([0,0,-1]) cylinder(h=l+2, r=od/2-1);
-	}
-}
 
-module microboreCap(od=10) {
-	color(microbore_color) difference() {
-		cylinder(h=od, r=od/2+1);
-		translate([0,0,-1]) cylinder(h=od, r=od/2);
-	}
-}
-
-module microboreT(od=10) {
-	// T points up z axis
-	color(microbore_color) union() {
-		microborePipe(l=20, od=od+2);
-		translate([-15,0,0]) rotate([0,90,0]) microborePipe(l=30, od=od+2);
-	}
-}
-
-module microboreNozzle(l=25, od=10, nod=4) {
-	// nod = nozzle outer diameter
-	color(microbore_color) difference() {
-		union() {
-			cylinder(h=od, r=od/2+1);
-			translate([0,0,od]) cylinder(h=(l-od)/2, r1=od/2+1, r2=nod/2);
-			cylinder(h=l, r=nod/2);
-		}
-		translate([0,0,-1]) cylinder(h=l+2, r=nod/2-0.2);
-	}
-}
-
-
-
-//translate([0,0,frameH]) microboreT();
 
 module inletManifold() {
-	l = frameW;
+	l = frameW-2*frameProfileW;
 	inletOffset = (pumpTubes-1) * inletCentres / 2;
 	pumpTubeX = (pumpTubes-1 )* pumpTubeOffset / 2;
 
+	vertL = pumpZ + pumpRailCentres - frameProfileW-100;
+
 	translate([-l/2,0,0]) rotate([0,90,0]) {
-		microborePipe(l=l);
-		translate([0,0,l-9]) microboreCap();
+		microborePipe(l=l) {
+			microboreCap();
+			
+			// elbow and down pipe
+			translate([0,0,-5]) rotate([0,0,180]) microboreElbow() microborePipe2(l=vertL) rotate([0,0,180]) microboreElbow2() microborePipe3(l=10) color(silicone_color) curvedPipe(points=[[0,0,-10],[0,0,80],[0,-frameD/2,100],[-500,-frameD/2,101]], segments=3, radii=[50,50,50],od=13, id=8, $fn=16);
+		}
 	}
 	
 
@@ -619,20 +596,124 @@ module inletManifold() {
 		    od=pumpTubeOR*2,
 			id=pumpTubeOR-pumpTubeWall, $fn=12);
 	}
+	
 }
 
-module washManifold() {
-	vOffset = 40; 
+module washManifoldHandle(washManifoldAng) {
 
-	//translate([-frameW/2,0,0]) cube([frameW,10,1]);
+	translate([0,-frameSideCentres/2,washManifoldZOffset]) rotate([washManifoldAng,0,0]) translate([0,frameSideCentres/2,0])  {
+
+		// handle
+		color("silver") translate([-frameW/2,-frameD/2 + 5,0]) rotate([0,90,0]) cylinder(h=frameW, r=10/2);
+		
+		// handle screws
+		for (i=[0:1]) mirror([i,0,0]) {
+			translate([frameW/2+1.5,-frameD/2 + 5,0]) rotate([0,90,0]) {
+				washer(M5_washer);
+				translate(washer_thickness(M5_washer)) screw(M5_cap_screw, 10);
+			}
+		}
 
 
-	translate([0,0,-vOffset]) {
-		translate([-frameW/2 + 30, 0, 0]) rotate([0,90,0]) microborePipe(frameW-30);
+		// side arms
+		for (i=[0:1]) mirror([i,0,0]) {
+			translate([frameW/2,-frameD/2,10]) rotate([-90,0,0]) aluExtL(10,20,frameD/2 + frameSideCentres/2);
+		}
+
+	}
+
+	// screws
+	for (i=[0:1]) mirror([i,0,0]) {
+		translate([frameW/2+1.5,-frameSideCentres/2,washManifoldZOffset]) rotate([0,90,0]) {
+			washer(M5_washer);
+			translate(washer_thickness(M5_washer)) screw(M5_cap_screw, 10);
+		}
+	}
+}
+
+// comes in two parts, rotational symmetry about x axis, through screwed to clamp manifold
+module washManifoldSlider() {
+	d = frameSideCentres - frameProfileW + 3;
+	w = frameProfileW-4;
+	h = 8;
+	h2 = 35;
+	sliderD = 8;
+	nutTrapH = screw_head_height(M4_hex_screw)-0.2;
+
+	difference() {
+		union() {
+			//cross beam
+			translate([-w/2,-d/2,-h/2]) cube([w, d - sliderD - 0.2, h/2]);
+		
+			// central cylinder
+			translate([-w/2,0,0]) rotate([0,90,0]) linear_extrude(height=w) pieSlice(20/2,-90,90);
+		
+			// slider
+			translate([-w/2,-d/2,-h2/2]) cube([w, sliderD, h2]);
+
+			// nut trap casing
+			translate([0,-d/4,-h/2-nutTrapH]) cylinder(h=nutTrapH + 1, r2=w/2, r1=w/2-2);
+		}
+
+		// hollow out central cylinder
+		translate([-w/2-1,0,0]) rotate([0,90,0]) cylinder(h=w+2, r=10/2);
+
+		// screw holes
+		for (i=[0:1]) mirror([0,i,0]) {
+			translate([0,d/4,-h/2-1]) cylinder(h=h+2, r=screw_clearance_radius(M4_hex_screw));
+		}
+
+		// nut trap
+		translate([0,-d/4,-h/2-nutTrapH -1]) cylinder(h=h, r=nut_flat_radius(M4_nut), $fn=6);
+
+		// remove extrusion profile
+		translate([0,-frameSideCentres/2,-100]) valueFrameProfile(P5_20x20,l=200);
+
+		// remove hollow for vertical inlet tube
+		for (i=[0,1]) mirror([0,i,0]) {
+			translate([0,40,-h2/2-1]) cylinder(h=h2+2, r=11/2);
+		}
+	}
+
+	// screws, washers, nuts
+	translate([0,d/4,h/2]) screw(M4_hex_screw, 15);
+	translate([0,d/4,-h/2]) mirror([0,0,1]) {
+		washer(M4_washer);
+		translate([0,0,washer_thickness(M4_washer)]) nut(M4_nut);
+	}
+}
+
+
+
+module washManifold(washManifoldHandlePos=0) {
+	// -12, to 16
+
+	washManifoldHandle(washManifoldAng(washManifoldHandlePos));
+
+
+	translate([0,0,washManifoldZOffset2(washManifoldAng(washManifoldHandlePos))]) {
+		translate([-frameW/2 , 0, 0]) rotate([0,90,0]) microborePipe(frameW);
 	
+		// nozzles
 		for (i=[0:bottlesWide-1]) translate([i*bottleCentres - (bottlesWide-1)/2*bottleCentres,0,0]) {
 			microboreT();
 			translate([0,0,12]) microboreNozzle(od=9,nod=7);
+		}
+
+		// caps
+		for (i=[0:1]) mirror([i,0,0]) {
+			translate([frameW/2,0,0]) rotate([0,90,0]) microboreCap();
+		}
+
+		// central t
+		rotate([90,0,0]) translate([-bottleCentres,0,0]) microboreT();
+
+		// sliders
+		for (i=[0:1]) mirror([i,0,0]) {
+			translate([frameW/2 - frameProfileW/2,0,0]) {
+				washManifoldSlider();
+				rotate([180,0,0]) washManifoldSlider();
+			}
 		}
 	}
 }
@@ -673,7 +754,7 @@ module sumpPump() {
 	}
 }
 
-module sumpPumpAssembly(sumpPumpArmPos=1) {
+module sumpPumpAssembly(sumpPumpArmPos=1, washManifoldHandlePos=0) {
 	//sumpPumpArmPos = 0:1  - 0 = up, 1 = down
 	sumpPumpArm = sumpPumpArmPos * -19;   //  angle of sump pump arm   0,  -18
 	
@@ -690,9 +771,9 @@ module sumpPumpAssembly(sumpPumpArmPos=1) {
 	tubeZ = pivotZ + frameShelfH1 - sumpPumpD/2 + ptX*sin(sumpPumpArm);
 
 	// end of tube
-	tubeEX = -frameW/2+frameProfileW + 20;
+	tubeEX = -bottleCentres;
 	tubeEY = 0;
-	tubeEZ = frameShelfH1 -40;
+	tubeEZ = frameShelfH1 + washManifoldZOffset2(washManifoldAng(washManifoldHandlePos));
 
   
 	translate([pivotX,pivotY - frameSideCentres/2 - frameProfileW/2 ,pivotZ - sumpPumpD/2 + frameShelfH1-5]) rotate([0,sumpPumpArm,0]) translate([-pivotX,-pivotY,-pivotZ]) {
@@ -700,7 +781,10 @@ module sumpPumpAssembly(sumpPumpArmPos=1) {
 		translate([-12,sumpPumpD/2,-sumpPumpH/2]) rotate([0,0,0]) sumpPump();
 
 		// pivot screw
-		translate([pivotX,pivotY,pivotZ]) rotate([90,0,0]) screw(M5_cap_screw, 10);
+		translate([pivotX,pivotY,pivotZ]) rotate([90,0,0]) {
+			washer(M5_washer);
+			translate(washer_thickness(M5_washer)) screw(M5_cap_screw, 10);
+		}
 	}
 
 	
@@ -710,21 +794,21 @@ module sumpPumpAssembly(sumpPumpArmPos=1) {
 			[tubeX,tubeY, tubeZ],
 			[tubeX + 50*sin(sumpPumpArm) ,tubeY,tubeZ + 40],
 			[tubeX - 60,tubeY+13,(tubeZ + tubeEZ)/2 +25],
-			[tubeEX -40,-20,tubeEZ],
-			[tubeEX - 40, tubeEY, tubeEZ],
+			[tubeEX,tubeEY-40,tubeEZ],
+			[tubeEX, tubeEY, tubeEZ],
 			[tubeEX, tubeEY, tubeEZ],
 			[0,100,50],
 			[0,0,0],
 			[50,0,0]
 		   ],
-            segments=5,
-			radii=[20,30,10,10,1,30],
+            segments=4,
+			radii=[20,30,15,10,10,30],
 		    od=11,
 			id=8, $fn=12);
 }	
 
 
-module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false, sumpPumpArmPos=0) {
+module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false, sumpPumpArmPos=0, washManifoldHandlePos=0) {
 	frame(pumpRot, showPump);
 
 	translate([0,-40,pumpZ + pumpRailCentres - frameProfileW-40]) inletManifold();
@@ -733,15 +817,15 @@ module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false, sumpPum
 	
 	if (showSump) translate([0,-(sumpD - frameSideCentres - frameProfileW)/2,0]) sump();
 
-	translate([0,0,frameShelfH1]) washManifold();
+	translate([0,0,frameShelfH1]) washManifold(washManifoldHandlePos=washManifoldHandlePos);
 
-	sumpPumpAssembly(sumpPumpArmPos = sumpPumpArmPos);
+	sumpPumpAssembly(sumpPumpArmPos = sumpPumpArmPos, washManifoldHandlePos=washManifoldHandlePos);
 	
 	if (showCrate) translate([0,0,frameShelfH1+1.5]) crateOfBottles();
 }
 
 
-machine(pumpRot=0, showCrate=false, showSump=true, showPump=true, sumpPumpArmPos=1);
+machine(pumpRot=0, showCrate=false, showSump=true, showPump=true, sumpPumpArmPos=1, washManifoldHandlePos=1);
 
 
 
