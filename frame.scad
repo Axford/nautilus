@@ -88,7 +88,7 @@ inletTubeWall = 2;
 // inlet manifold
 inletCentres = 32;   // spacing between inlet nozzles
 
-silicone_color = [1,0.2,0.2,0.6];
+silicone_color = [1,0.2,0.2,1];
 microbore_color = [0.8,0.65,0.4,1];
 
 
@@ -588,7 +588,8 @@ module microboreNozzle(l=25, od=10, nod=4) {
 
 module inletManifold() {
 	l = frameW;
-	inletOffset = pumpTubes * inletCentres / 2;
+	inletOffset = (pumpTubes-1) * inletCentres / 2;
+	pumpTubeX = (pumpTubes-1 )* pumpTubeOffset / 2;
 
 	translate([-l/2,0,0]) rotate([0,90,0]) {
 		microborePipe(l=l);
@@ -598,18 +599,32 @@ module inletManifold() {
 
 	// pump inlets
 	for (i=[0:pumpTubes-1]) {
-		translate([-inletOffset +15 + i*inletCentres,0,0]) rotate([-45,0,0]) {
+		translate([-inletOffset + i*inletCentres,0,0]) rotate([0,0,0]) {
 			microboreT();
 			translate([0,0,10]) microborePipe(l=20);
 			translate([0,0,22]) microboreNozzle();
 		}
+	}
+
+	// pipework
+	for (i=[0:pumpTubes-1]) {
+		color(silicone_color) curvedPipe(points=[ 
+			[i*pumpTubeOffset - pumpTubeX,60,41],
+			[i*pumpTubeOffset - pumpTubeX,40,41],
+			[-inletOffset + i*inletCentres,1,70],
+			[-inletOffset + i*inletCentres,0,36]
+		   ],
+            segments=3,
+			radii=[10,10],
+		    od=pumpTubeOR*2,
+			id=pumpTubeOR-pumpTubeWall, $fn=12);
 	}
 }
 
 module washManifold() {
 	vOffset = 40; 
 
-	translate([-frameW/2,0,0]) cube([frameW,10,1]);
+	//translate([-frameW/2,0,0]) cube([frameW,10,1]);
 
 
 	translate([0,0,-vOffset]) {
@@ -726,7 +741,7 @@ module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false, sumpPum
 }
 
 
-machine(pumpRot=0, showCrate=false, showSump=true, showPump=false, sumpPumpArmPos=1);
+machine(pumpRot=0, showCrate=false, showSump=true, showPump=true, sumpPumpArmPos=1);
 
 
 
