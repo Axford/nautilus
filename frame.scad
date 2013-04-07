@@ -1,6 +1,7 @@
 use_realistic_colors = true;
 simplify = false;    // reduces complexity of some parts, e.g. alu extrusions
 
+include <bom.scad>
 include <config.scad>
 include <colors.scad>
 include <valueframe.scad>
@@ -13,6 +14,7 @@ use <parametric_involute_gear_v5.0.scad>
 use <gear_calculator.scad>
 use <roundedRect.scad>
 use <2DShapes.scad>
+use <curvedPipe.scad>
 
 
 perim = 0.7;
@@ -27,8 +29,11 @@ bottleD = 68.4;
 bottleH = 260;
 
 //crate
-crateW = 4 * bottleD + 5* 5;
-crateD = 3 * bottleD + 4*5;
+bottlesWide = 4;
+bottlesDeep = 3;
+bottleCentres = bottleD +5;
+crateW = bottlesWide * bottleCentres + 10;
+crateD = bottlesDeep * bottleCentres + 10;
 crateH = bottleH + 10;
 
 // external dimensions
@@ -37,11 +42,11 @@ frameW = crateW + 5 + 2*frameProfileW;
 frameD = crateD * 5/3;
 frameSideCentres = 2 * bottleD - frameProfileW;  // distance between centres of side frames
 
-sumpD = bottleD * 2;
+sumpD = bottleD * 2 + 15;
 sumpH = 50;
 sumpW = frameW - 2*frameProfileW;
 
-frameShelfH1 = 100; 
+frameShelfH1 = 110; 
 
 gearCentres = 40;
 cp = fit_spur_gears(11,39,gearCentres);
@@ -66,6 +71,14 @@ pumpTubeOffset = pumpTubeCasingW + 1;
 
 pumpTubeRollerW = pumpTubes * (pumpTubeOffset) + 5; 
 
+// sumpPump
+sumpPumpW = 70;
+sumpPumpH = 49;
+sumpPumpD = 45;
+sumpPumpImpW = 12;
+sumpPumpInD = 13.8;
+sumpPumpOutD = 8.7;
+
 
 // silicone inlet tube, sized to have same cross-section area as the four pump tubes
 inletTubeOD = 12;
@@ -75,6 +88,7 @@ inletTubeWall = 2;
 // inlet manifold
 inletCentres = 32;   // spacing between inlet nozzles
 
+silicone_color = [1,0.2,0.2,0.6];
 microbore_color = [0.8,0.65,0.4,1];
 
 
@@ -150,10 +164,13 @@ module frame() {
 		} 
 
 		// sump supports
-		rotate([0,0,i*180]) translate([0,0,0]) {
+		*rotate([0,0,i*180]) translate([0,0,0]) {
 			translate([-frameW/2,-sumpD/2 -1.5,frameProfileW]) rotate([90,0,90]) aluExtL(w=20,h=20,l=frameW);
 		}
 	}
+
+	// sump backstop
+	translate([-frameW/2,(frameSideCentres + frameProfileW)/2,frameProfileW]) rotate([90,0,90]) aluExtL(w=20,h=20,l=frameW);
 
 	translate([0,(frameSideCentres)/2,pumpZ]) {
 		translate([-frameW/2+frameProfileW,0,0]) rotate([90,0,90]) valueFrameProfile(P5_20x20,l=frameW - 2*frameProfileW);
@@ -397,7 +414,7 @@ module pumpTube(l=50) {
 	// l indicates straight length
 	r = pumpRotorOffset + pumpRollerD/2 - (pumpTubeOR - 2*pumpTubeWall);
 	or = r + 2*pumpTubeOR;
-	color([1,0.2,0.2,0.6]) union() {
+	color(silicone_color) union() {
 		difference() {
 			rotate_extrude(convexity = 10)
 				translate([r, 0, 0])
@@ -589,21 +606,127 @@ module inletManifold() {
 	}
 }
 
+module washManifold() {
+	vOffset = 40; 
 
-module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false) {
+	translate([-frameW/2,0,0]) cube([frameW,10,1]);
+
+
+	translate([0,0,-vOffset]) {
+		translate([-frameW/2 + 30, 0, 0]) rotate([0,90,0]) microborePipe(frameW-30);
+	
+		for (i=[0:bottlesWide-1]) translate([i*bottleCentres - (bottlesWide-1)/2*bottleCentres,0,0]) {
+			microboreT();
+			translate([0,0,12]) microboreNozzle(od=9,nod=7);
+		}
+	}
+}
+
+module sumpPump() {
+	color([0.2,0.2,0.2]) union() {	
+		// motor
+		translate([sumpPumpImpW,0,sumpPumpH/2]) rotate([0,90,0]) cylinder(h=sumpPumpW-sumpPumpImpW, r=sumpPumpD/2);
+		
+		// bracket
+		translate([sumpPumpImpW,-sumpPumpD/2,0]) difference() {
+			cube([sumpPumpW-sumpPumpImpW, sumpPumpD, 3]);
+
+			// mounting screw holes
+			translate([sumpPumpW/2-5,sumpPumpD/2,0])
+			for (i=[0:3]) rotate([0,0,i*90]) {
+				translate([sumpPumpD/2-3,sumpPumpD/2-3,-1]) cylinder(h=10, r=4/2);
+			}
+		}
+		translate([sumpPumpImpW,-sumpPumpD/2,0]) cube([5, sumpPumpD, sumpPumpH]);
+		 
+
+		// impeller
+		translate([0,0,sumpPumpH/2]) rotate([0,90,0]) cylinder(h=sumpPumpImpW+1, r=sumpPumpD/2-3);
+
+		// inlet
+		translate([-12,0,sumpPumpH/2]) rotate([0,90,0]) difference() {
+			cylinder(h=12, r=sumpPumpInD/2);
+			translate([0,0,-1]) cylinder(h=14, r=sumpPumpInD/2-1);
+		}
+
+		// outlet
+		translate([sumpPumpImpW/2,-sumpPumpD/4,sumpPumpH/2]) difference() {
+			cylinder(h=sumpPumpH/2+5, r=sumpPumpOutD/2);
+			translate([0,0,-1]) cylinder(h=sumpPumpH, r=sumpPumpOutD/2-1);
+		}
+
+	}
+}
+
+module sumpPumpAssembly(sumpPumpArmPos=1) {
+	//sumpPumpArmPos = 0:1  - 0 = up, 1 = down
+	sumpPumpArm = sumpPumpArmPos * -19;   //  angle of sump pump arm   0,  -18
+	
+	pivotX = 	frameW/2 -10;
+	pivotY = -2;
+	pivotZ = sumpPumpD/2-6;
+
+	// offset to pump tube 
+	ptX = pivotX + 6;
+
+	// start of tube
+	tubeX = -6 + (ptX - ptX*cos(sumpPumpArm));
+	tubeY = pivotY - frameSideCentres/2 - frameProfileW/2 + sumpPumpD/4 + 2;
+	tubeZ = pivotZ + frameShelfH1 - sumpPumpD/2 + ptX*sin(sumpPumpArm);
+
+	// end of tube
+	tubeEX = -frameW/2+frameProfileW + 20;
+	tubeEY = 0;
+	tubeEZ = frameShelfH1 -40;
+
+  
+	translate([pivotX,pivotY - frameSideCentres/2 - frameProfileW/2 ,pivotZ - sumpPumpD/2 + frameShelfH1-5]) rotate([0,sumpPumpArm,0]) translate([-pivotX,-pivotY,-pivotZ]) {
+		translate([0,0,sumpPumpD/2+2]) mirror([0,1,0]) rotate([0,90,0]) aluExtL(w=15,d=15,l=frameW/2);
+		translate([-12,sumpPumpD/2,-sumpPumpH/2]) rotate([0,0,0]) sumpPump();
+
+		// pivot screw
+		translate([pivotX,pivotY,pivotZ]) rotate([90,0,0]) screw(M5_cap_screw, 10);
+	}
+
+	
+
+	// pump tube
+		color(silicone_color) curvedPipe(points=[ 
+			[tubeX,tubeY, tubeZ],
+			[tubeX + 50*sin(sumpPumpArm) ,tubeY,tubeZ + 40],
+			[tubeX - 60,tubeY+13,(tubeZ + tubeEZ)/2 +25],
+			[tubeEX -40,-20,tubeEZ],
+			[tubeEX - 40, tubeEY, tubeEZ],
+			[tubeEX, tubeEY, tubeEZ],
+			[0,100,50],
+			[0,0,0],
+			[50,0,0]
+		   ],
+            segments=5,
+			radii=[20,30,10,10,1,30],
+		    od=11,
+			id=8, $fn=12);
+}	
+
+
+module machine(pumpRot=0, showCrate=true, showSump=true, showPump=false, sumpPumpArmPos=0) {
 	frame(pumpRot, showPump);
 
 	translate([0,-40,pumpZ + pumpRailCentres - frameProfileW-40]) inletManifold();
 
 	if (showPump) translate([0,(frameSideCentres)/2,pumpZ]) pumpAssembly(pumpRot);
 	
-	if (showSump) translate([0,0,frameProfileW+1.5]) sump();
+	if (showSump) translate([0,-(sumpD - frameSideCentres - frameProfileW)/2,0]) sump();
+
+	translate([0,0,frameShelfH1]) washManifold();
+
+	sumpPumpAssembly(sumpPumpArmPos = sumpPumpArmPos);
 	
 	if (showCrate) translate([0,0,frameShelfH1+1.5]) crateOfBottles();
 }
 
 
-machine(pumpRot=0, showCrate=false, showSump=false, showPump=true);
+machine(pumpRot=0, showCrate=false, showSump=true, showPump=false, sumpPumpArmPos=1);
 
 
 
