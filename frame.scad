@@ -795,11 +795,7 @@ module sumpPumpAssembly(sumpPumpArmPos=1, washManifoldHandlePos=0) {
 			[tubeX + 50*sin(sumpPumpArm) ,tubeY,tubeZ + 40],
 			[tubeX - 60,tubeY+13,(tubeZ + tubeEZ)/2 +25],
 			[tubeEX,tubeEY-40,tubeEZ],
-			[tubeEX, tubeEY, tubeEZ],
-			[tubeEX, tubeEY, tubeEZ],
-			[0,100,50],
-			[0,0,0],
-			[50,0,0]
+			[tubeEX, tubeEY, tubeEZ]
 		   ],
             segments=4,
 			radii=[20,30,15,10,10,30],
