@@ -90,7 +90,7 @@ module vectorz(l=10, l_arrow=4, mark=false)
 module orientate(v,vref=[0,0,1], roll=0)
 {
   //-- Calculate the rotation axis
-  raxis = cross(vref,v);
+  raxis = v[0]==vref[0] && v[1]==vref[1] ? [0,1,0] : cross(vref,v);
   
   //-- Calculate the angle between the vectors
   ang = anglev(vref,v);

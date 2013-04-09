@@ -30,11 +30,13 @@ function vec4_from_vec3(v) = [v[0], v[1], v[2], 1];
 module pipeOrientate(v1,v2)
 {
 	// calc orientate for v1
-	v1axis = cross([0,0,1], v1);
+	
+	v1axis = v1[0]==0 && v1[1] == 0 ? [0,1,0] : cross([0,0,1], v1);
 	v1ang = anglev([0,0,1], v1);
-	
+		
+
 	v1axisLen = mod(v1axis);
-	
+
 	// apply reverse rotation to v2
 	// calculate rotation of v2 around z axis
 	
@@ -60,32 +62,41 @@ module pipeOrientate(v1,v2)
          child(0);
 }
 
-module pipeCurve(start,mid,end,r, od,id,isLastSegment=false) {
+module pipeCurve(points,point,radii, od,id,isLastSegment=false) {
+	pre = points[point-1];
+	start = points[point];
+	mid = points[point+1];
+	end = points[point+2];
+
+	post = points[point+3];
+	preR = radii[point-1];
+	r = radii[point];	
+	postR = radii[point+1];
+
 	dir1 = subv(mid,start);
 	dir2 = subv(end,mid);
 	l1 = mod(dir1);
 	l2 = mod(dir2);
 	ang = anglev(dir1,dir2);
-	vref = [0,0,1];
+
+	preDir = pre? subv(start,pre) : dir1;
+	preAng = pre? anglev(preDir, dir1) : 0;
+	preInset = pre? preR * tan(preAng/2) : 0;
+	
+	postDir = post? subv(post,end) : dir2;
+	postAng = post? anglev(dir2, postDir) : 0;
+	postInset = post? postR * tan(postAng/2) : 0;
+	
 
 	dir1u = unitv(dir1);
-	dir2u = unitv(dir2);
-
 	inset = r * tan(ang/2);
-	
-	
-	rAxis = cross(dir1,dir2);
-
 	rStart = start + (l1-inset)*dir1u;
-	rZAng = anglev(dir1,[1,0,0]) - 90;
-	
 	
 	// start
-	translate(start) orientate(dir1) translate([0,0,l1/2]) cylinder(h=l1/2-inset,r=od/2);
+	translate(start) orientate(dir1) translate([0,0,preInset]) cylinder(h=l1-preInset-inset,r=od/2);
 
 	//end
-	translate(mid) orientate(dir2) translate([0,0,inset]) cylinder(h=l2/2-inset,r=od/2);
-	
+	translate(mid) orientate(dir2) translate([0,0,inset]) cylinder(h=l2-postInset-inset,r=od/2);
 	
 	// curved section
 	// nb: torus slice always starts at x axis and goes counter clockwise around z
@@ -100,30 +111,39 @@ module pipeCurve(start,mid,end,r, od,id,isLastSegment=false) {
 module curvedPipe(points, segments, radii, od, id) {
 	union() {
 		for (point = [0:segments-2]) 
-			pipeCurve(points[point],points[point+1],points[point+2],radii[point],od,id);
-	
-		//start
-		pipeSegment(points[0],points[1],od,id,beginning=true);
-	
-		//end
-		pipeSegment(points[segments-1],points[segments],od,id,beginning=false);
+			pipeCurve(points,point,radii,od,id);
 	}
 }
 
 
 
-//test piece
-curvedPipe([ [50,0,0],
+//test pieces
+*curvedPipe([ [0,0,0],
 			[100,0,0],
 			[100,100,0],
 			[50,100,100],
 			[50,100,150],
 			[0,100,50],
 			[0,0,0],
-			[50,0,0]
+			[50,0,50]
 		   ],
             7,
-			[30,30,30,6,50,30],
+			[70,30,30,6,50,30],
+		    10,
+			8);
+
+
+curvedPipe([ [0,0,0],
+			[100,0,0],
+			[100,100,0],
+			[100,100,100],
+			[0,100,100],
+			[0,100,0],
+			[0,0,0],
+			[50,0,50]
+		   ],
+            7,
+			[70,30,30,6,50,30],
 		    10,
 			8);
 
