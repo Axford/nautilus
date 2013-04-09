@@ -7,6 +7,8 @@
 //-- Released under the GPL license
 //---------------------------------------------------------------
 
+//-- Updated orientate function to correct singularity when v lies along vref
+
 //----------------------------------------
 //-- FUNCTIONS FOR WORKING WITH VECTORS
 //----------------------------------------

@@ -61,36 +61,62 @@ module allRoundedRect(size, radius, center=false) {
 }
 
 
+// Extended rotational extrude, allows control of start/end angle
 
-module torusSlice(r1, r2, start_angle, end_angle, convexity=10, r3=0, $fn=64) {
-	rx = r1 + r2;
-    ry = rx;
-    trx = rx* sqrt(2) + 1;
-    try = ry* sqrt(2) + 1;
+// Child 2D shape is used for the rotational extrusion
+// Child 2D shape should lie in xy plane, centred on z axis
+// Child y axis will be aligned to z axis in the extrusion
+
+// NB: Internal render command is necessary to correclty display
+// complex child objects (e.g. differences)
+
+// r = Radius of rotational extrusion
+// childH = height of child object (approx)
+// childW = width of child object (approx)
+
+// Example usage:
+
+//   rotate_extrude_ext(r=50, childW=20, childH=20, start_angle=0, end_angle=180) {
+//			difference() {
+//				square([20,20],center=true);
+//				translate([10,0,0]) circle(5);
+//			}
+//		}
+
+module rotate_extrude_ext(r, childW, childH, convexity) {
+	or = (r + childW/2) * sqrt(2) + 1;
     a0 = (4 * start_angle + 0 * end_angle) / 4;
     a1 = (3 * start_angle + 1 * end_angle) / 4;
     a2 = (2 * start_angle + 2 * end_angle) / 4;
     a3 = (1 * start_angle + 3 * end_angle) / 4;
     a4 = (0 * start_angle + 4 * end_angle) / 4;
     if(end_angle > start_angle)
+		render()
         intersection() {
-			rotate_extrude(convexity=convexity) translate([r1,0,0]) difference() {
-				circle(r2, $fn=$fn/4);
-				circle(r3, $fn=$fn/4);
-			}
+			rotate_extrude(convexity=convexity) translate([r,0,0]) child(0);
 
-			translate([0,0,-r2-1])
-			linear_extrude(height=2*r2+2)
+			translate([0,0,-childH/2 - 1])
+			linear_extrude(height=childH+2)
         		polygon([
 		            [0,0],
-		            [trx * cos(a0), try * sin(a0)],
-		            [trx * cos(a1), try * sin(a1)],
-		            [trx * cos(a2), try * sin(a2)],
-		            [trx * cos(a3), try * sin(a3)],
-		            [trx * cos(a4), try * sin(a4)],
+		            [or * cos(a0), or * sin(a0)],
+		            [or * cos(a1), or * sin(a1)],
+		            [or * cos(a2), or * sin(a2)],
+		            [or * cos(a3), or * sin(a3)],
+		            [or * cos(a4), or * sin(a4)],
 		            [0,0]
 		       ]);
     }
+}
+
+
+
+module torusSlice(r1, r2, start_angle, end_angle, convexity=10, r3=0, $fn=64) {
+	difference() {
+		rotate_extrude_ext(r=r1, childH=2*r2, childW=2*r2, start_angle=start_angle, end_angle=end_angle, convexity=convexity) difference() circle(r2, $fn=$fn/4);
+
+		rotate_extrude(convexity) translate([r1,0,0]) circle(r3, $fn=$fn/4);
+	}
 }
 
 
@@ -254,10 +280,19 @@ module moreShapesExamples() {
 		sector(r=10, a=70, h=20, center = false);
 
 		tube(or=10, ir=5, h=50, center = false);
+
+		rotate_extrude_ext(r=50, childW=20, childH=20, start_angle=0, end_angle=180) {
+			difference() {
+				square([20,20],center=true);
+				translate([10,0,0]) circle(5);
+			}
+		}
 	}
 }
 
 moreShapesExamples();
+
+
 
 
 
