@@ -122,7 +122,7 @@ module torusSlice(r1, r2, start_angle, end_angle, convexity=10, r3=0, $fn=64) {
 
 module trapezoid(a,b,h,aOffset=0,center=false) {
 	// lies in x/y plane
-	// edges a,b are paralle to x axis
+	// edges a,b are parallel to x axis
 	// h is in direction of y axis	
 	// b is anchored at origin, extends along positive x axis
 	// a is offset along y by h, extends along positive x axis
@@ -192,6 +192,16 @@ module right_triangle(width, height, h, center = true) {
         polygon(points = [[0,0], [width, 0], [0, height]]);
 }
 
+module roundedRightTriangle(width, height, h, r=[1,1,1], center = true, $fn=12) {
+    linear_extrude(height = h, center = center)
+    	hull() {
+        	translate([r[0],r[0],0]) circle(r[0]);
+        	translate([width-r[1],r[1],0]) circle(r[1]);
+        	translate([r[2],height-r[2],0]) circle(r[2]);
+        }
+}
+
+
 module rounded_square(w, h, r)
 {
 	// 2D
@@ -224,7 +234,7 @@ module rounded_cylinder(r, h, r2, roundBothEnds=false)
         }
 }
 
-module sector(r, a, h, , center = true) {
+module sector(r, a, h, center = true) {
     linear_extrude(height = h, center = center)
         intersection() {
             circle(r = r, center = true);
@@ -290,7 +300,7 @@ module moreShapesExamples() {
 	}
 }
 
-moreShapesExamples();
+*moreShapesExamples();
 
 
 

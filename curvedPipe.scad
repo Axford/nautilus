@@ -93,7 +93,7 @@ module curvedPipe(points, segments, radii, od, id) {
 
 
 //test pieces
-if (true) {
+if (false) {
 	curvedPipe([ [0,0,0],
 				[100,0,0],
 				[100,100,0],
