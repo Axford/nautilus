@@ -236,7 +236,11 @@ module rounded_cylinder(r, h, r2, roundBothEnds=false)
 
 module sector(r, a, h, center = true) {
     linear_extrude(height = h, center = center)
-        intersection() {
+        sector2D(r=r, a=a, center=center);
+}
+
+module sector2D(r, a, center = true) {
+    intersection() {
             circle(r = r, center = true);
                 polygon(points = [
                     [0, 0],
