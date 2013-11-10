@@ -65,10 +65,6 @@ module case() {
 		translate([caseOD/2-caseTR-2,0,0]) 
 		square([2,3],center=true);
 
-	// led
-	color(c_led)
-		translate([0,0,caseOH/2])
-		cylinder(r=1.5,h=0.2,$fn=12);
 
 	// screws
 	for (i=[0:2]) {
